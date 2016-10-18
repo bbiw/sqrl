@@ -6,6 +6,10 @@ from time import process_time
 
 
 def enhash(data, iterations=16):
+    '''process the data through 16 rounds of pbkdf2_sha256
+
+    This is intended for deriving secondary keys from a high-entropy master key.
+    '''
     assert len(data) == KEY_BYTES
     ld = ctypes.c_ulonglong(KEY_BYTES)
     u = ctypes.create_string_buffer(KEY_BYTES).raw
@@ -20,6 +24,16 @@ _kdf = sodium.crypto_pwhash_scryptsalsa208sha256_ll
 
 
 def enscrypt(passwd, salt, logN, iterations, seconds=0):
+    '''stretch the password into a high-entropy key
+
+    This is a memory-hard and time-consuming KDF.
+
+    If you are trying to match an exisiting key, leave seconds at 0.
+    If you want the derivation to consume a certain amount of time, set seconds to that value.
+    The function will terminate when both the minimum iterations and minimum time have been satisfied.
+
+    returns a tuple: (iterations, time_consumed, derived_key)
+    '''
     pwlen = ctypes.c_size_t(len(passwd))
     saltlen = ctypes.c_size_t(len(salt))
     N = ctypes.c_uint64(1 << logN)
