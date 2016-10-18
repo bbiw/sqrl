@@ -76,3 +76,5 @@ done in a secure environment (e.g. air-gapped Raspberry Pi running a hardened Al
 The SRS block with the week password SHOULD stay on the hardened computer, and SHOULD NOT be transfered to a less secure platform.
 
 Considering something similar to the hint strategy, it might be reasonable for the week password to be the first word or two of the strong password. After the first day, it could be increased to 3, 4, and 5 words.
+
+In any case, SRS would work just as well to memorize the 24-digit code, which *is* easier to *type*.
