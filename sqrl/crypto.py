@@ -1,13 +1,13 @@
 
-import sqrl
+from sqrl import KEY_BYTES
 from pysodium import sodium
 import ctypes
 
 
 def enhash(data, iterations=16):
-    assert len(data) == sqrl.KEY_BYTES
-    ld = ctypes.c_ulonglong(sqrl.KEY_BYTES)
-    u = ctypes.create_string_buffer(sqrl.KEY_BYTES).raw
+    assert len(data) == KEY_BYTES
+    ld = ctypes.c_ulonglong(KEY_BYTES)
+    u = ctypes.create_string_buffer(KEY_BYTES).raw
     sodium.crypto_hash_sha256(u, data, ld)
     acc = int.from_bytes(u, 'little')
     for i in range(1, iterations):
