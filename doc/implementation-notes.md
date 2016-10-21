@@ -41,10 +41,12 @@ the AES-GCM IV as being 16 bytes.  If it were so, `pt length` would be 49 and
 giving, in this case, 4 billion 16-byte blocks before it repeats.  This is serious
 overkill in our case, as we are only processing 7 blocks (adlen+ctlen=45+64=109 bytes). Therefore, I don't think it would hurt to use a 16-byte nonce.
 
-
 Another approach would be to give each application instance a unique identifier and
 mix it with counter that gets incremented every time that app encrypts a type 1
 block. How to make the app-id unique? *Maybe* ask the user.
+
+I implemented a similar idea for sqrl.crypto.Nonce, but I am not sure I like it.
+The only advantage it has over a random nonce is that it may be slightly faster.
 
 For block type 2, a zero nonce is OK because the
 key is the EnScrypted rescue code, which changes exactly whenever a new IUK/IMK is created.

@@ -8,6 +8,17 @@ from binascii import a2b_hex, b2a_hex
 
 EXPENSIVE_TESTS = os.environ.get("EXPENSIVE_TESTS")
 
+def test_nonce():
+    import pickle
+    n = Nonce()
+    p = pickle.dumps(n)
+
+    n1 = [next(n) for _ in range(20)]
+
+    n = pickle.loads(p)
+
+    n2 = [next(n) for _ in range(20)]
+    assert n1 == n2
 
 def test_enhash():
     with open('tests/enhash-vectors.txt') as fi:

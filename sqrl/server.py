@@ -12,46 +12,13 @@ import pysodium as na
 import ctypes
 
 from sqrl import KEY_BYTES, rng
+from sqrl.crypto import Nonce, sha256sum
 
 
 Nut = namedtuple("Nut", "now,up,ip,flags")
 
 
-def sha256sum(b, bytes=32):
-    out = ctypes.create_string_buffer(32)
-    na.sodium.crypto_hash_sha256(out, b, ctypes.c_size_t(len(b)))
-    return out.raw[:bytes]
-
 NUT_IPV6 = 1
-
-
-class Nonce:
-    '''not threadsafe
-    Because we are hashing the counter, and truncating the hash, we cannot
-    guarantee the full period, so you should ensure that you rotate keys
-    frequently.
-
-    If an attacker cannot benefit from information leaked by a sequential
-    counter, use that instead of this.
-    '''
-    __slots__ = ('_bytes', '_count', '_prefix')
-
-    def __init__(self, bytes=na.crypto_secretbox_NONCEBYTES, start=1, prefix=None):
-        self._bytes = bytes
-        self._count = start
-        self._prefix = rng.randombytes(16) if prefix is None else prefix
-
-    def __next__(self):
-        self._count, c = self._count + 1, self._count
-        res = sha256sum(
-            self._prefix + c.to_bytes(self._bytes, 'little'), self._bytes)
-        return res
-
-    def __getstate__(self):
-        return self._bytes, self._count, self._prefix
-
-    def __setstate__(self, s):
-        self.__init__(*s)
 
 
 class NutCase:

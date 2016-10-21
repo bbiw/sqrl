@@ -3,7 +3,6 @@ import sqrl.server
 from sqrl.server import *
 
 import time
-import pickle
 
 
 class MockTime:
@@ -105,16 +104,6 @@ def test_nut():
     assert not gt
 
 
-def test_nonce():
-    n = Nonce()
-    p = pickle.dumps(n)
-
-    n1 = [next(n) for _ in range(20)]
-
-    n = pickle.loads(p)
-
-    n2 = [next(n) for _ in range(20)]
-    assert n1 == n2
 
 if __name__ == '__main__':
     test_rotate()
