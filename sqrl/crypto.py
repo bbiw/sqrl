@@ -60,4 +60,79 @@ def enscrypt(passwd, salt, logN, iterations, seconds=0):
         )
         acc ^= int.from_bytes(out, 'little')
         i += 1
-    return i,process_time()-start,acc.to_bytes(KEY_BYTES,'little')
+    return i, process_time() - start, acc.to_bytes(KEY_BYTES, 'little')
+
+import random
+import os
+
+
+class KeyGen:
+
+    def __init__(self, seed=None):
+        '''Gather all of the key generation into one place.
+
+        Use a seed for deterministic results (testing).
+        Omit the seed for high-entropy keys.
+        '''
+        if seed:
+            self._rng = random.Random(seed)
+        else:
+            self._rng = random.SystemRandom()
+            self.randbytes = os.urandom
+
+    def randbytes(self, count):
+        r = self._rng.randrange
+        ba = bytearray(count)
+        for i in range(count):
+            ba[i] = r(256)
+        return bytes(ba)
+
+    def rescue_code(self):
+        '''generate a random password of 24 decimal digits'''
+        r = self._rng.randrange
+        return '-'.join(str(r(10000)) for _ in range(6))
+
+    def identity_unlock_key(self):
+        '''generate random IdentityUnlockKey'''
+        return self.randbytes(KEY_BYTES)
+
+    def identity_master_key(self, iuk):
+        '''generate IdentityMasterKey from IdentityUnlockKey'''
+        return enhash(iuk)
+
+    def identity_lock_key(self, iuk):
+        '''generate IdentityLockKey from IdentityUnlockKey'''
+        return crypto_sign_seed_keypair(iuk)[0]
+
+    def public_key(self, sk):
+        '''generate public key for the given secret key'''
+        return crypto_sign_seed_keypair(sk)[0]
+
+    def local_key(self, mk):
+        '''generate a LocalKey from IdentityMasterKey'''
+        return enhash(mk)
+
+    def random_lock_key(self):
+        '''generate RandomLockKey'''
+        return self.randbytes(KEY_BYTES)
+
+    def verify_unlock_key(self, ilk, rlk):
+        '''generate VerifyUnlockKey from IdentityLockKey and RandomLockKey
+
+        SignPublic(DHKA(IdentityLock,RandomLock))
+        '''
+        return crypto_sign_seed_keypair(rlk)[0]
+
+    def server_unlock_key(self, rlk):
+        '''generate ServerUnlockKey from RandomLockKey'''
+        return crypto_sign_seed_keypair(rlk)[0]
+
+    def unlock_request_signing_key(self, suk, iuk):
+        '''generate UnlockRequestSigningKey from ServerUnlockKey and IdentityUnlockKey'''
+
+
+def sign(message,sk,pk): #=>signature
+    return crypto_sign_detached(message,sk+pk)
+
+def verify(sig,msg,pk):
+    crypto_sign_verify_detached(message,pk)
