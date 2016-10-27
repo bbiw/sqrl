@@ -82,7 +82,7 @@ EnScrypt.DEFAULT = EnScrypt(None,
 class Rescue:
     _struct = struct.Struct('<HH16sBI')
     _fields = ('blocklen', 'blocktype', 'salt', 'logN', 'iterations')
-    __slots__ = _fields + ('aead',)
+    __slots__ = _fields + ('aead', 'authenticated')
     BLOCKTYPE = 2
     BLOCKLEN = _struct.size + KEY_BYTES + TAG_BYTES
 
@@ -93,6 +93,7 @@ class Rescue:
         self.logN = logN
         self.iterations = iterations
         self.aead = None
+        self.authenticated = False
 
     @classmethod
     def load(cls, blocklen, blocktype, source):
@@ -104,6 +105,7 @@ class Rescue:
         return that
 
     def dump(self, sink):
+        assert self.authenticated
         ad, ct, tag = self.aead
         sink.write(ad)
         sink.write(ct)
@@ -124,6 +126,7 @@ class Rescue:
         ad = cls._struct.pack(*p)
         ct, tag = encrypt(dkey, NULLIV, key, ad)
         that.aead = _aead(ad, ct, tag)
+        that.authenticated = True
         return that
 
     def get_key(self, rescue_code):
@@ -133,6 +136,7 @@ class Rescue:
         dkey = self.get_key(rescue_code)
         ad, ct, tag = self.aead
         iuk = decrypt(dkey, NULLIV, ct, ad, tag)
+        self.authenticated = True
         return iuk
 
     def __repr__(self):
@@ -146,7 +150,7 @@ class Access:
     _fields = ('blocklen', 'blocktype', 'ptlen', 'gcmiv',
                'salt', 'logN', 'iterations',
                'optionflags', 'hintlen', 'pwverifysecs', 'idletimeoutmins')
-    __slots__ = _fields + ('aead',)
+    __slots__ = _fields + ('aead', 'authenticated')
     IV_BYTES = 12
     KEY_COUNT = 2
     _struct = struct.Struct(
@@ -169,6 +173,7 @@ class Access:
         self.hintlen = hintlen
         self.pwverifysecs = pwverifysecs
         self.idletimeoutmins = idletimeoutmins
+        self.authenticated = False
 
     @classmethod
     def load(cls, blocklen, blocktype, source):
@@ -183,9 +188,11 @@ class Access:
         ct = source.read(ctlen)
         tag = source.read(TAG_BYTES)
         that.aead = _aead(ad, ct, tag)
+        that.authenticated = True
         return that
 
     def dump(self, sink):
+        assert self.authenticated
         ad, ct, tag = self.aead
         sink.write(ad)
         sink.write(ct)
@@ -223,6 +230,7 @@ class Access:
         ad = self._struct.pack(*(getattr(self, k) for k in self._fields))
         ct, tag = encrypt(dkey, iv, keys, ad)
         self.aead = _aead(ad, ct, tag)
+        self.authenticated = True
         return self
 
     def open(self, password):
@@ -233,6 +241,7 @@ class Access:
         iv = self.gcmiv
         ad, ct, tag = self.aead
         keys = decrypt(dkey, iv, ct, ad, tag)
+        self.authenticated = True
         return tuple(keys[i:i + KEY_BYTES] for i in range(0, len(keys), KEY_BYTES))
 
     def __repr__(self):
@@ -243,7 +252,7 @@ class Access:
 
 class Previous:
     _fields = ('blocklen', 'blocktype', 'edition')
-    __slots__ = _fields + ('aead',)
+    __slots__ = _fields + ('aead', 'authenticated')
     _struct = struct.Struct('<HHH')
     PTLEN = _struct.size
     BLOCKTYPE = 3
@@ -253,6 +262,7 @@ class Previous:
         self.blocklen = blocklen
         self.blocktype = blocktype
         self.edition = edition
+        self.authenticated =False
 
     @classmethod
     def load(cls, blocklen, blocktype, source):
@@ -266,6 +276,7 @@ class Previous:
         return that
 
     def dump(self, sink):
+        assert self.authenticated
         ad, ct, tag = self.aead
         sink.write(ad)
         sink.write(ct)
@@ -273,23 +284,27 @@ class Previous:
 
     @classmethod
     def seal(cls, imk, keys, edition=None):
+        lk = len(keys)
+        assert 1 <= lk <= 4
         if edition is None:
-            edition = len(keys)
-        blocklen = cls.PTLEN + TAG_BYTES + len(keys) * KEY_BYTES
+            edition = lk
+        blocklen = cls.PTLEN + TAG_BYTES + lk * KEY_BYTES
         that = cls(blocklen, cls.BLOCKTYPE, edition)
         ad = cls._struct.pack(blocklen, cls.BLOCKTYPE, edition)
         ct, tag = encrypt(imk, NULLIV, b''.join(keys), ad)
         that.aead = _aead(ad, ct, tag)
+        that.authenticated = True
         return that
 
     def open(self, imk):
         ad, ct, tag = self.aead
         keys = decrypt(imk, NULLIV, ct, ad, tag)
+        self.authenticated = True
         return list(keys[i:i + KEY_BYTES] for i in range(0, len(keys), KEY_BYTES))
 
     def __repr__(self):
-        count = len(self.aead.ciphertext)//KEY_BYTES
-        return '<Previous edition={} keys={}>'.format(self.edition,count)
+        count = len(self.aead.ciphertext) // KEY_BYTES
+        return '<Previous edition={} keys={}>'.format(self.edition, count)
 
 
 class SQRLdata(list):
