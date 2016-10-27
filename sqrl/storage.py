@@ -93,3 +93,15 @@ class Blocks(list):
             block = self.tm[bt]()
             block.load(fo, offset, bl, bt, bh)
             self.add_block(bt, block)
+
+
+NULLIV = b'\0' * 12
+
+MINITER_INTERACTIVE = 20
+MINTIME_INTERACTIVE = 2
+MINITER_SENSITIVE = 100
+MINTIME_SENSITIVE = 60
+DEFAULT_LOGN = 9
+
+class SQRLdata(Blocks):
+    header = "sqrldata"

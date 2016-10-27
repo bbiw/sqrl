@@ -1,14 +1,76 @@
 
-from sqrl import KEY_BYTES,rng
+from sqrl import rng
 import pysodium as na
 from pysodium import sodium
 import ctypes
 from time import process_time
 
+from cryptography.hazmat.primitives.ciphers import (
+    Cipher, algorithms, modes
+)
+
+from cryptography.hazmat.backends import default_backend
+
+
+from sqrl import (
+    TAG_BYTES,
+    KEY_BYTES,
+    GCMIV_BYTES,
+    SCRYPT_SALT_BYTES,
+    NULLIV
+)
+
+
+def encrypt(key, iv, plaintext, associated_data):
+    '''encrypt plaintext and mac with associated_data under key and iv
+
+    uses AES-256-GCM
+    '''
+    # Construct an AES-GCM Cipher object with the given key and a
+    # randomly generated parse_rescue_block.
+    encryptor = Cipher(
+        algorithms.AES(key),
+        modes.GCM(iv),
+        backend=default_backend()
+    ).encryptor()
+
+    # associated_data will be authenticated but not encrypted,
+    # it must also be passed in on decryption.
+    encryptor.authenticate_additional_data(associated_data)
+
+    # Encrypt the plaintext and get the associated ciphertext.
+    # GCM does not require padding.
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+    return (ciphertext, encryptor.tag)
+
+
+def decrypt(key, iv, ciphertext, associated_data, tag):
+    '''decrypt ciphertext and mac with associated_data under key and iv, compare mac with tag
+
+    uses AES-256-GCM
+    '''
+    # Construct a Cipher object, with the key, iv, and additionally the
+    # GCM tag used for authenticating the message.
+    decryptor = Cipher(
+        algorithms.AES(key),
+        modes.GCM(iv, tag),
+        backend=default_backend()
+    ).decryptor()
+
+    # We put associated_data back in or the tag will fail to verify
+    # when we finalize the decryptor.
+    decryptor.authenticate_additional_data(associated_data)
+
+    # Decryption gs us the authenticated plaintext.
+    # If the tag does not match an InvalidTag exception will be raised.
+    return decryptor.update(ciphertext) + decryptor.finalize()
+
 def sha256sum(b, bytes=32):
     out = ctypes.create_string_buffer(32)
     na.sodium.crypto_hash_sha256(out, b, ctypes.c_size_t(len(b)))
     return out.raw[:bytes]
+
 
 class Nonce:
     '''not threadsafe
@@ -112,14 +174,9 @@ class KeyGen:
             self._rng = random.Random(seed)
         else:
             self._rng = random.SystemRandom()
-            self.randbytes = os.urandom
 
     def randbytes(self, count):
-        r = self._rng.randrange
-        ba = bytearray(count)
-        for i in range(count):
-            ba[i] = r(256)
-        return bytes(ba)
+        return self._rng.getrandbits(count*8).to_bytes(count,'little')
 
     def rescue_code(self):
         '''generate a random password of 24 decimal digits'''
@@ -165,8 +222,9 @@ class KeyGen:
         '''generate UnlockRequestSigningKey from ServerUnlockKey and IdentityUnlockKey'''
 
 
-def sign(message,sk,pk): #=>signature
-    return crypto_sign_detached(message,sk+pk)
+def sign(message, sk, pk):  # =>signature
+    return crypto_sign_detached(message, sk + pk)
 
-def verify(sig,msg,pk):
-    crypto_sign_verify_detached(message,pk)
+
+def verify(sig, msg, pk):
+    crypto_sign_verify_detached(message, pk)

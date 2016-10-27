@@ -71,11 +71,11 @@ def new_id():
 
     logN = DEFAULT_LOGN
 
-    # block type 2
+    # block type 1
     access_salt = randbytes(16)
     miniter = MINITER_INTERACTIVE
     mintime = MINTIME_INTERACTIVE
-    i, t, rescue_key = enscrypt(rc, rescue_salt, logN, miniter, mintime)
+    i, t, access_key = enscrypt(rc, access_salt, logN, miniter, mintime)
     access_nonce = randbytes(12)  # TODO: make this better
     ad = BLOCK1.pack(125, 1, 45, access_nonce, access_salt, logN,
                      i, optionflags, hintlength, pwverifysecs, idletimeoutmins)
