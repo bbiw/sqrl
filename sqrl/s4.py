@@ -241,6 +241,57 @@ class Access:
             hex(self.optionflags), self.hintlen, self.pwverifysecs, self.idletimeoutmins)
 
 
+class Previous:
+    _fields = ('blocklen', 'blocktype', 'edition')
+    __slots__ = _fields + ('aead',)
+    _struct = struct.Struct('<HHH')
+    PTLEN = _struct.size
+    BLOCKTYPE = 3
+    #BLOCKLEN = PTLEN + KEY_BYTES * KEY_COUNT + TAG_BYTES
+
+    def __init__(self, blocklen, blocktype, edition):
+        self.blocklen = blocklen
+        self.blocktype = blocktype
+        self.edition = edition
+
+    @classmethod
+    def load(cls, blocklen, blocktype, source):
+        offset = source.tell()
+        ad = source.read(cls.PTLEN)
+        that = cls(*cls._struct.unpack(ad))
+        ctlen = blocklen - cls.PTLEN - TAG_BYTES
+        ct = source.read(ctlen)
+        tag = source.read(TAG_BYTES)
+        that.aead = _aead(ad, ct, tag)
+        return that
+
+    def dump(self, sink):
+        ad, ct, tag = self.aead
+        sink.write(ad)
+        sink.write(ct)
+        sink.write(tag)
+
+    @classmethod
+    def seal(cls, imk, keys, edition=None):
+        if edition is None:
+            edition = len(keys)
+        blocklen = cls.PTLEN + TAG_BYTES + len(keys) * KEY_BYTES
+        that = cls(blocklen, cls.BLOCKTYPE, edition)
+        ad = cls._struct.pack(blocklen, cls.BLOCKTYPE, edition)
+        ct, tag = encrypt(imk, NULLIV, b''.join(keys), ad)
+        that.aead = _aead(ad, ct, tag)
+        return that
+
+    def open(self, imk):
+        ad, ct, tag = self.aead
+        keys = decrypt(imk, NULLIV, ct, ad, tag)
+        return list(keys[i:i + KEY_BYTES] for i in range(0, len(keys), KEY_BYTES))
+
+    def __repr__(self):
+        count = len(self.aead.ciphertext)//KEY_BYTES
+        return '<Previous edition={} keys={}>'.format(self.edition,count)
+
+
 class SQRLdata(list):
     HEADER = b'sqrldata'
     ALT_HEADER = b'SQRLDATA'
