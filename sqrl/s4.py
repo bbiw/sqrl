@@ -144,7 +144,7 @@ class Rescue:
         return iuk
 
     def __repr__(self):
-        uid = self.aead.ciphertext.hex() if self.aead else 'None'
+        uid = encode(self.aead.ciphertext).decode('ascii') if self.aead else 'None'
         return '<Rescue salt={} logN={} iterations={} uid={}>'.format(
             self.salt.hex(), self.logN, self.iterations,
             uid)
