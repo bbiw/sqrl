@@ -28,7 +28,8 @@ _aead = namedtuple('_aead', ('authdata', 'ciphertext', 'tag'))
 class Block(namedtuple('Block', ('bocklen', 'blocktype', 'offset', 'data'))):
     '''preserve data for unrecognized block types'''
     __slots__ = ()
-
+    BLOCKTYPE = 0
+    
     @classmethod
     def for_bytes(cls, tc, data):
         bl = len(data) + 4
