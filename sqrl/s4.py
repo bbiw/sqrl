@@ -23,13 +23,13 @@ def encode(b):
 
 
 class _aead(namedtuple('_aead', ('authdata', 'ciphertext', 'tag'))):
-    __slots__=()
+    __slots__ = ()
+
     def dump(self, sink):
         ad, ct, tag = self
         sink.write(ad)
         sink.write(ct)
         sink.write(tag)
-
 
 
 class Block(namedtuple('Block', ('bocklen', 'blocktype', 'offset', 'data'))):
@@ -165,7 +165,7 @@ class Access:
 
     def __init__(self, blocklen=BLOCKLEN, blocktype=BLOCKTYPE, ptlen=PTLEN, gcmiv=None,
                  salt=None, logN=9, iterations=None,
-                 optionflags=0xF1, hintlen=6, pwverifysecs=1, idletimeoutmins=1):
+                 optionflags=0xF1, hintlen=6, pwverifysecs=2, idletimeoutmins=1):
         self.blocklen = blocklen
         self.blocktype = blocktype
         self.ptlen = ptlen
@@ -262,7 +262,7 @@ class Previous:
         self.blocklen = blocklen
         self.blocktype = blocktype
         self.edition = edition
-        self.authenticated =False
+        self.authenticated = False
 
     @classmethod
     def load(cls, blocklen, blocktype, source):
