@@ -1,25 +1,11 @@
 import io
 import struct
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+from sqrl.s4enc import decode, encode
 from collections import namedtuple
 
 from sqrl import TAG_BYTES, KEY_BYTES, NULLIV, rng
 from sqrl.crypto import enscrypt, enhash, encrypt, decrypt
 
-_PADDING = [b'', b'', b'==', b'=']
-
-
-def decode(a):
-    '''urlsafe_b64decode without padding'''
-    return urlsafe_b64decode(a + _PADDING[len(a) % 4])
-
-
-def encode(b):
-    '''urlsafe_b64encode without padding'''
-    f = urlsafe_b64encode(b)
-    l3 = len(b) % 3
-    g = f if l3 == 0 else f[:l3 - 3]
-    return g
 
 
 class _aead(namedtuple('_aead', ('authdata', 'ciphertext', 'tag'))):
