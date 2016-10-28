@@ -12,7 +12,7 @@ authtag
 '''
 import time
 import struct
-from hashlib import sha256
+import hmac
 
 from sqrl.s4 import _aead
 from sqrl import rng, TAG_BYTES
@@ -91,7 +91,7 @@ class Secret:
 
     def get_key(self, imk):
         '''get secret encryption key'''
-        h = sha256(imk)
+        h = hmac.new(imk,digestmod='sha256')
         for x in self.path, self.realm, self.username:
             h.update(len(x).to_bytes(1, 'little'))
             h.update(x)
