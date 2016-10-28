@@ -93,7 +93,7 @@ class Secret:
         '''get secret encryption key'''
         h = sha256(imk)
         for x in self.path, self.realm, self.username:
-            h.update(len(x).to_bytes(1,'little'))
+            h.update(len(x).to_bytes(1, 'little'))
             h.update(x)
         return enhash(h.digest())
 
@@ -135,11 +135,7 @@ class Secret:
         return secret
 
     def dump(self, sink):
-        assert self.authenticated
-        ad, ct, tag = self.aead
-        sink.write(ad)
-        sink.write(ct)
-        sink.write(tag)
+        self.aead.dump(sink)
 
     def next_nonce(self):
         iv = self.gcmiv

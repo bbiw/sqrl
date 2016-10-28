@@ -22,7 +22,14 @@ def encode(b):
     return g
 
 
-_aead = namedtuple('_aead', ('authdata', 'ciphertext', 'tag'))
+class _aead(namedtuple('_aead', ('authdata', 'ciphertext', 'tag'))):
+    __slots__=()
+    def dump(self, sink):
+        ad, ct, tag = self
+        sink.write(ad)
+        sink.write(ct)
+        sink.write(tag)
+
 
 
 class Block(namedtuple('Block', ('bocklen', 'blocktype', 'offset', 'data'))):
@@ -106,11 +113,7 @@ class Rescue:
         return that
 
     def dump(self, sink):
-        assert self.authenticated
-        ad, ct, tag = self.aead
-        sink.write(ad)
-        sink.write(ct)
-        sink.write(tag)
+        self.aead.dump(sink)
 
     @classmethod
     def seal(cls, key, rescue_code,
@@ -193,11 +196,7 @@ class Access:
         return that
 
     def dump(self, sink):
-        assert self.authenticated
-        ad, ct, tag = self.aead
-        sink.write(ad)
-        sink.write(ct)
-        sink.write(tag)
+        self.aead.dump(sink)
 
     def next_nonce(self):
         iv = self.gcmiv
@@ -277,11 +276,7 @@ class Previous:
         return that
 
     def dump(self, sink):
-        assert self.authenticated
-        ad, ct, tag = self.aead
-        sink.write(ad)
-        sink.write(ct)
-        sink.write(tag)
+        self.aead.dump(sink)
 
     @classmethod
     def seal(cls, imk, keys, edition=None):
