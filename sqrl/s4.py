@@ -29,7 +29,7 @@ class Block(namedtuple('Block', ('bocklen', 'blocktype', 'offset', 'data'))):
     '''preserve data for unrecognized block types'''
     __slots__ = ()
     BLOCKTYPE = 0
-    
+
     @classmethod
     def for_bytes(cls, tc, data):
         bl = len(data) + 4
@@ -162,7 +162,7 @@ class Access:
 
     def __init__(self, blocklen=BLOCKLEN, blocktype=BLOCKTYPE, ptlen=PTLEN, gcmiv=None,
                  salt=None, logN=9, iterations=None,
-                 optionflags=0x1F, hintlen=6, pwverifysecs=1, idletimeoutmins=1):
+                 optionflags=0xF1, hintlen=6, pwverifysecs=1, idletimeoutmins=1):
         self.blocklen = blocklen
         self.blocktype = blocktype
         self.ptlen = ptlen
