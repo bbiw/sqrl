@@ -91,7 +91,7 @@ class Secret:
 
     def get_key(self, imk):
         '''get secret encryption key'''
-        h = hmac.new(imk,digestmod='sha256')
+        h = hmac.new(imk, digestmod='sha256')
         for x in self.path, self.realm, self.username:
             h.update(len(x).to_bytes(1, 'little'))
             h.update(x)
